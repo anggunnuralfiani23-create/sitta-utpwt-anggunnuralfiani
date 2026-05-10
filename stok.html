@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SITTA-UT | Manajemen Stok</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --orange: #f97316; --orange-dim: rgba(249,115,22,0.12);
+      --navy:   #1e3a8a;
+      --bg:     #0f172a;
+      --sidebar:#1e293b;
+      --card:   #1e293b;
+      --card2:  #263348;
+      --border: rgba(255,255,255,0.07);
+      --text:   #f1f5f9;
+      --muted:  #94a3b8;
+      --green:  #22c55e; --green-dim: rgba(34,197,94,0.12);
+      --yellow: #eab308; --yellow-dim: rgba(234,179,8,0.12);
+      --red:    #ef4444; --red-dim:   rgba(239,68,68,0.12);
+      --blue:   #3b82f6; --blue-dim:  rgba(59,130,246,0.12);
+    }
+    body { font-family:'DM Sans',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; display:flex; }
+
+    /* ── SIDEBAR ── */
+    .sidebar {
+      width:240px; background:var(--sidebar); border-right:1px solid var(--border);
+      display:flex; flex-direction:column; padding:28px 0;
+      position:fixed; top:0; left:0; bottom:0; z-index:20;
+    }
+    .sidebar-brand { display:flex; align-items:center; gap:10px; padding:0 24px; margin-bottom:36px; }
+    .brand-icon { width:38px;height:38px;background:var(--orange);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px; }
+    .brand-name { font-family:'Syne',sans-serif;font-weight:800;font-size:18px;color:white; }
+    .nav-section { padding:0 16px; margin-bottom:4px; }
+    .nav-label { font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);padding:0 8px;margin-bottom:6px; }
+    .nav-item { display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;color:var(--muted);text-decoration:none;font-size:14px;font-weight:500;transition:all .2s;margin-bottom:2px;cursor:pointer; }
+    .nav-item:hover { background:rgba(255,255,255,.05); color:var(--text); }
+    .nav-item.active { background:var(--orange-dim); color:var(--orange); }
+    .nav-item .icon { font-size:17px; }
+    .sidebar-bottom { margin-top:auto; padding:0 16px; }
+    .user-card { display:flex;align-items:center;gap:10px;padding:12px;background:rgba(255,255,255,.04);border-radius:10px; }
+    .user-avatar { width:36px;height:36px;background:var(--orange);border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;color:white; }
+    .user-info { flex:1; }
+    .user-name { font-size:13px;font-weight:600;color:var(--text); }
+    .user-role { font-size:11px;color:var(--muted); }
+    .logout-btn { background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;transition:color .2s; }
+    .logout-btn:hover { color:var(--red); }
+
+    /* ── MAIN ── */
+    .main { margin-left:240px; flex:1; padding:32px 36px; animation:fadeIn .4s ease; }
+    @keyframes fadeIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+
+    .page-header { display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:28px;flex-wrap:wrap;gap:16px; }
+    .page-header h1 { font-family:'Syne',sans-serif;font-size:26px;font-weight:700; }
+    .page-header p { color:var(--muted);font-size:14px;margin-top:4px; }
+    .header-actions { display:flex;gap:10px;flex-wrap:wrap; }
+
+    /* ── BUTTONS ── */
+    .btn { padding:9px 18px;border-radius:9px;font-size:13px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all .2s;border:none;display:inline-flex;align-items:center;gap:6px; }
+    .btn-primary { background:var(--orange);color:white; }
+    .btn-primary:hover { background:#ea6a0a; }
+    .btn-success { background:var(--green-dim);color:var(--green);border:1px solid rgba(34,197,94,.25); }
+    .btn-success:hover { background:rgba(34,197,94,.22); }
+    .btn-danger { background:var(--red-dim);color:var(--red);border:1px solid rgba(239,68,68,.25); }
+    .btn-danger:hover { background:rgba(239,68,68,.22); }
+    .btn-ghost { background:rgba(255,255,255,.05);color:var(--muted);border:1px solid var(--border); }
+    .btn-ghost:hover { color:var(--text); }
+    .btn-blue { background:var(--blue-dim);color:var(--blue);border:1px solid rgba(59,130,246,.25); }
+    .btn-blue:hover { background:rgba(59,130,246,.22); }
+    .btn-sm { padding:6px 12px;font-size:12px;border-radius:7px; }
+
+    /* ── STATS ── */
+    .stats-grid { display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:28px; }
+    .stat-card { background:var(--card);border:1px solid var(--border);border-radius:16px;padding:20px; }
+    .stat-icon { font-size:24px;margin-bottom:10px; }
+    .stat-label { font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px; }
+    .stat-value { font-family:'Syne',sans-serif;font-size:28px;font-weight:700;margin:6px 0 4px; }
+    .stat-sub { font-size:12px;color:var(--muted); }
+    .stat-badge { font-size:11px;padding:2px 8px;border-radius:20px;display:inline-block; }
+    .badge-green  { background:var(--green-dim);color:var(--green); }
+    .badge-yellow { background:var(--yellow-dim);color:var(--yellow); }
+    .badge-red    { background:var(--red-dim);color:var(--red); }
+    .badge-orange { background:var(--orange-dim);color:var(--orange); }
+    .badge-blue   { background:var(--blue-dim);color:var(--blue); }
+
+    /* ── TABS ── */
+    .tabs { display:flex;gap:4px;margin-bottom:24px;background:var(--card);padding:6px;border-radius:12px;width:fit-content;border:1px solid var(--border); }
+    .tab { padding:8px 20px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;color:var(--muted);transition:all .2s;border:none;background:none;font-family:'DM Sans',sans-serif; }
+    .tab.active { background:var(--orange);color:white; }
+    .tab:hover:not(.active) { color:var(--text); }
+
+    /* ── TABLE SECTION ── */
+    .section { background:var(--card);border:1px solid var(--border);border-radius:16px;overflow:hidden; }
+    .section-header { display:flex;align-items:center;justify-content:space-between;padding:18px 24px;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:12px; }
+    .section-title { font-family:'Syne',sans-serif;font-size:15px;font-weight:700; }
+    .search-filter { display:flex;gap:8px;align-items:center;flex-wrap:wrap; }
+    .search-input { padding:8px 14px;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;width:200px;transition:border-color .2s; }
+    .search-input:focus { border-color:var(--orange); }
+    .search-input::placeholder { color:rgba(148,163,184,.4); }
+    select.filter-select { padding:8px 12px;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;cursor:pointer;appearance:none; }
+    select.filter-select option { background:var(--sidebar); }
+
+    table { width:100%;border-collapse:collapse; }
+    thead th { padding:11px 20px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);background:rgba(255,255,255,.02);border-bottom:1px solid var(--border); }
+    tbody tr { border-bottom:1px solid var(--border);transition:background .15s; }
+    tbody tr:last-child { border-bottom:none; }
+    tbody tr:hover { background:rgba(255,255,255,.02); }
+    tbody td { padding:13px 20px;font-size:13px;color:var(--text); }
+    .kode-cell { font-family:'Syne',sans-serif;font-size:12px;color:var(--orange);font-weight:700; }
+    .nama-cell { font-weight:500; }
+    .stok-cell { font-family:'Syne',sans-serif;font-weight:700;font-size:14px; }
+    .stok-normal { color:var(--green); }
+    .stok-warning { color:var(--yellow); }
+    .stok-danger  { color:var(--red); }
+
+    .pill { padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;display:inline-block; }
+    .pill-kemasan    { background:var(--blue-dim);color:var(--blue); }
+    .pill-peralatan  { background:var(--orange-dim);color:var(--orange); }
+    .pill-keamanan   { background:var(--green-dim);color:var(--green); }
+    .pill-administrasi { background:var(--yellow-dim);color:var(--yellow); }
+    .pill-masuk  { background:var(--green-dim);color:var(--green); }
+    .pill-keluar { background:var(--red-dim);color:var(--red); }
+
+    .action-group { display:flex;gap:6px; }
+
+    /* ── MODAL ── */
+    .modal-overlay { position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:100;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity .25s; }
+    .modal-overlay.show { opacity:1;pointer-events:all; }
+    .modal { background:var(--card);border:1px solid var(--border);border-radius:20px;width:100%;max-width:500px;max-height:90vh;overflow-y:auto;transform:translateY(20px);transition:transform .25s; }
+    .modal-overlay.show .modal { transform:translateY(0); }
+    .modal-header { display:flex;align-items:center;justify-content:space-between;padding:22px 26px;border-bottom:1px solid var(--border); }
+    .modal-title { font-family:'Syne',sans-serif;font-size:17px;font-weight:700; }
+    .modal-close { background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;line-height:1;transition:color .2s; }
+    .modal-close:hover { color:var(--text); }
+    .modal-body { padding:26px; }
+    .modal-footer { padding:16px 26px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px; }
+
+    .field { margin-bottom:18px; }
+    .field label { display:block;font-size:12px;font-weight:500;color:var(--muted);margin-bottom:7px;text-transform:uppercase;letter-spacing:.5px; }
+    .field input, .field select, .field textarea {
+      width:100%;padding:11px 14px;background:rgba(255,255,255,.05);border:1px solid var(--border);
+      border-radius:9px;color:var(--text);font-size:14px;font-family:'DM Sans',sans-serif;outline:none;transition:border-color .2s;
+    }
+    .field input:focus, .field select:focus, .field textarea:focus { border-color:var(--orange); }
+    .field input::placeholder, .field textarea::placeholder { color:rgba(148,163,184,.4); }
+    .field select option { background:var(--sidebar); }
+    .field textarea { resize:vertical;min-height:80px; }
+    .field-row { display:grid;grid-template-columns:1fr 1fr;gap:14px; }
+    .field-info { background:rgba(249,115,22,.08);border:1px solid rgba(249,115,22,.2);border-radius:9px;padding:12px 14px;font-size:13px;color:var(--muted);margin-bottom:18px; }
+    .field-info strong { color:var(--orange); }
+
+    /* ── EMPTY ── */
+    .empty-state { text-align:center;padding:60px 20px; }
+    .empty-state .icon { font-size:48px;margin-bottom:12px; }
+    .empty-state h3 { font-family:'Syne',sans-serif;font-size:18px;font-weight:700;margin-bottom:6px; }
+    .empty-state p { color:var(--muted);font-size:14px; }
+
+    /* ── STOK RENDAH ALERT ── */
+    .alert-bar { background:var(--red-dim);border:1px solid rgba(239,68,68,.3);border-radius:12px;padding:14px 18px;margin-bottom:24px;display:flex;align-items:center;gap:12px; }
+    .alert-bar .alert-icon { font-size:20px; }
+    .alert-bar .alert-text { flex:1;font-size:13px; }
+    .alert-bar strong { color:var(--red); }
+
+    /* ── MINI BADGE COUNT ── */
+    .count-badge { background:var(--orange);color:white;font-size:10px;font-weight:700;padding:2px 6px;border-radius:10px;margin-left:4px; }
+
+    @media(max-width:900px){
+      .sidebar{display:none;}
+      .main{margin-left:0;padding:20px 16px;}
+      .stats-grid{grid-template-columns:repeat(2,1fr);}
+      .field-row{grid-template-columns:1fr;}
+    }
+  </style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+  <div class="sidebar-brand">
+    <div class="brand-icon">🚚</div>
+    <span class="brand-name">SITTA-UT</span>
+  </div>
+  <div class="nav-section">
+    <div class="nav-label">Menu</div>
+    <a class="nav-item" href="dashboard.html"><span class="icon">📊</span> Dashboard</a>
+    <a class="nav-item" href="tracking.html"><span class="icon">📦</span> Tracking</a>
+    <a class="nav-item active" href="stok.html"><span class="icon">🗃️</span> Stok Barang</a>
+    <a class="nav-item" href="riwayat-do.html"><span class="icon">📋</span> Riwayat DO</a>
+    <a class="nav-item" href="laporan.html"><span class="icon">📈</span> Laporan</a>
+  </div>
+  <div class="nav-section" style="margin-top:16px">
+    <div class="nav-label">Pengaturan</div>
+    <a class="nav-item" href="#"><span class="icon">👤</span> Profil</a>
+    <a class="nav-item" href="#"><span class="icon">⚙️</span> Pengaturan</a>
+  </div>
+  <div class="sidebar-bottom">
+    <div class="user-card">
+      <div class="user-avatar" id="userInitial">A</div>
+      <div class="user-info">
+        <div class="user-name" id="userName">Admin</div>
+        <div class="user-role">Operator</div>
+      </div>
+      <button class="logout-btn" onclick="logout()" title="Logout">⏻</button>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<main class="main">
+  <div class="page-header">
+    <div>
+      <h1>Manajemen Stok</h1>
+      <p>Kelola stok barang gudang, mutasi masuk & keluar</p>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-success" onclick="bukaModalMutasi('Masuk')">⬆ Stok Masuk</button>
+      <button class="btn btn-danger"  onclick="bukaModalMutasi('Keluar')">⬇ Stok Keluar</button>
+      <button class="btn btn-primary" onclick="bukaModalTambah()">＋ Tambah Barang</button>
+    </div>
+  </div>
+
+  <!-- Alert stok rendah -->
+  <div class="alert-bar" id="alertBar" style="display:none">
+    <div class="alert-icon">⚠️</div>
+    <div class="alert-text" id="alertText"></div>
+  </div>
+
+  <!-- STATS -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-icon">🗃️</div>
+      <div class="stat-label">Total Jenis Barang</div>
+      <div class="stat-value" id="statTotal" style="color:var(--text)">0</div>
+      <span class="stat-badge badge-blue" id="statKategori">0 kategori</span>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">✅</div>
+      <div class="stat-label">Stok Aman</div>
+      <div class="stat-value" id="statAman" style="color:var(--green)">0</div>
+      <span class="stat-badge badge-green">Di atas minimum</span>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">⚠️</div>
+      <div class="stat-label">Stok Menipis</div>
+      <div class="stat-value" id="statRendah" style="color:var(--yellow)">0</div>
+      <span class="stat-badge badge-yellow">Segera restock</span>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">🔄</div>
+      <div class="stat-label">Mutasi Hari Ini</div>
+      <div class="stat-value" id="statMutasi" style="color:var(--orange)">0</div>
+      <span class="stat-badge badge-orange">Transaksi</span>
+    </div>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <button class="tab active" onclick="gantiTab('stok',this)">📦 Daftar Stok</button>
+    <button class="tab" onclick="gantiTab('mutasi',this)">🔄 Riwayat Mutasi</button>
+  </div>
+
+  <!-- TAB: DAFTAR STOK -->
+  <div id="tabStok">
+    <div class="section">
+      <div class="section-header">
+        <div class="section-title">Daftar Barang</div>
+        <div class="search-filter">
+          <input class="search-input" type="text" placeholder="Cari barang..." id="searchStok" oninput="renderTabelStok()">
+          <select class="filter-select" id="filterKategori" onchange="renderTabelStok()">
+            <option value="">Semua Kategori</option>
+            <option>Kemasan</option>
+            <option>Peralatan</option>
+            <option>Keamanan</option>
+            <option>Administrasi</option>
+          </select>
+          <select class="filter-select" id="filterStatus" onchange="renderTabelStok()">
+            <option value="">Semua Status</option>
+            <option value="aman">Aman</option>
+            <option value="rendah">Menipis</option>
+          </select>
+        </div>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Kode</th>
+            <th>Nama Barang</th>
+            <th>Kategori</th>
+            <th>Stok</th>
+            <th>Min. Stok</th>
+            <th>Satuan</th>
+            <th>Harga Satuan</th>
+            <th>Aksi</th>
+          </tr>
+        </thead>
+        <tbody id="bodyStok"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- TAB: RIWAYAT MUTASI -->
+  <div id="tabMutasi" style="display:none">
+    <div class="section">
+      <div class="section-header">
+        <div class="section-title">Riwayat Mutasi Stok</div>
+        <div class="search-filter">
+          <input class="search-input" type="text" placeholder="Cari barang/kode..." id="searchMutasi" oninput="renderTabelMutasi()">
+          <select class="filter-select" id="filterJenis" onchange="renderTabelMutasi()">
+            <option value="">Semua Jenis</option>
+            <option>Masuk</option>
+            <option>Keluar</option>
+          </select>
+        </div>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Tanggal</th>
+            <th>Kode</th>
+            <th>Nama Barang</th>
+            <th>Jenis</th>
+            <th>Jumlah</th>
+            <th>Stok Sebelum</th>
+            <th>Stok Sesudah</th>
+            <th>Keterangan</th>
+            <th>Oleh</th>
+          </tr>
+        </thead>
+        <tbody id="bodyMutasi"></tbody>
+      </table>
+    </div>
+  </div>
+</main>
+
+<!-- MODAL: TAMBAH BARANG -->
+<div class="modal-overlay" id="modalTambah">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modalTambahTitle">Tambah Barang Baru</div>
+      <button class="modal-close" onclick="tutupModal('modalTambah')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="editId">
+      <div class="field-row">
+        <div class="field">
+          <label>Kode Barang</label>
+          <input type="text" id="inputKode" placeholder="BRG-XXX">
+        </div>
+        <div class="field">
+          <label>Satuan</label>
+          <input type="text" id="inputSatuan" placeholder="pcs / roll / meter">
+        </div>
+      </div>
+      <div class="field">
+        <label>Nama Barang</label>
+        <input type="text" id="inputNama" placeholder="Nama barang">
+      </div>
+      <div class="field">
+        <label>Kategori</label>
+        <select id="inputKategori">
+          <option>Kemasan</option>
+          <option>Peralatan</option>
+          <option>Keamanan</option>
+          <option>Administrasi</option>
+        </select>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>Stok Awal</label>
+          <input type="number" id="inputStok" placeholder="0" min="0">
+        </div>
+        <div class="field">
+          <label>Minimum Stok</label>
+          <input type="number" id="inputMinStok" placeholder="0" min="0">
+        </div>
+      </div>
+      <div class="field">
+        <label>Harga Satuan (Rp)</label>
+        <input type="number" id="inputHarga" placeholder="0" min="0">
+      </div>
+      <div class="field">
+        <label>Keterangan</label>
+        <textarea id="inputKeterangan" placeholder="Deskripsi singkat barang..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="tutupModal('modalTambah')">Batal</button>
+      <button class="btn btn-primary" onclick="simpanBarang()">Simpan</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: MUTASI STOK -->
+<div class="modal-overlay" id="modalMutasi">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modalMutasiTitle">Stok Masuk</div>
+      <button class="modal-close" onclick="tutupModal('modalMutasi')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="jenisMutasi">
+      <div class="field">
+        <label>Pilih Barang</label>
+        <select id="mutasiBarang" onchange="updateInfoMutasi()">
+          <option value="">-- Pilih Barang --</option>
+        </select>
+      </div>
+      <div class="field-info" id="infoMutasi" style="display:none">
+        Stok saat ini: <strong id="infoStokSaat">0</strong> &nbsp;|&nbsp; Minimum: <strong id="infoMinStok">0</strong>
+      </div>
+      <div class="field">
+        <label>Jumlah</label>
+        <input type="number" id="mutasiJumlah" placeholder="0" min="1">
+      </div>
+      <div class="field">
+        <label>Keterangan</label>
+        <input type="text" id="mutasiKeterangan" placeholder="Alasan / referensi DO...">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="tutupModal('modalMutasi')">Batal</button>
+      <button class="btn btn-primary" id="btnSimpanMutasi" onclick="simpanMutasi()">Simpan</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/data.js"></script>
+<script>
+  // ── Auth ──
+  const namaUser = localStorage.getItem("namaUser");
+  if (!namaUser) window.location.href = "index.html";
+  document.getElementById("userName").textContent = namaUser;
+  document.getElementById("userInitial").textContent = namaUser.charAt(0).toUpperCase();
+
+  function logout() {
+    Swal.fire({ title:'Keluar?', text:'Anda yakin ingin logout?', icon:'question',
+      showCancelButton:true, confirmButtonColor:'#f97316', cancelButtonColor:'#1e3a8a',
+      confirmButtonText:'Ya, Logout', cancelButtonText:'Batal',
+      background:'#1e293b', color:'#f1f5f9'
+    }).then(r => { if(r.isConfirmed){ localStorage.removeItem("namaUser"); window.location.href="index.html"; } });
+  }
+
+  // ── TABS ──
+  function gantiTab(tab, el) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    el.classList.add('active');
+    document.getElementById('tabStok').style.display   = tab==='stok'   ? 'block' : 'none';
+    document.getElementById('tabMutasi').style.display = tab==='mutasi' ? 'block' : 'none';
+    if (tab==='mutasi') renderTabelMutasi();
+  }
+
+  // ── STATS ──
+  function updateStats() {
+    const aman   = dataStok.filter(d => d.stok >= d.minStok).length;
+    const rendah = dataStok.filter(d => d.stok < d.minStok).length;
+    const kat    = [...new Set(dataStok.map(d => d.kategori))].length;
+    const mutasiHariIni = riwayatStok.filter(r => r.tanggal === hari()).length;
+
+    document.getElementById('statTotal').textContent   = dataStok.length;
+    document.getElementById('statKategori').textContent = kat + ' kategori';
+    document.getElementById('statAman').textContent    = aman;
+    document.getElementById('statRendah').textContent  = rendah;
+    document.getElementById('statMutasi').textContent  = mutasiHariIni;
+
+    // Alert bar
+    const kritis = dataStok.filter(d => d.stok < d.minStok);
+    if (kritis.length > 0) {
+      document.getElementById('alertBar').style.display = 'flex';
+      document.getElementById('alertText').innerHTML =
+        `<strong>⚠ ${kritis.length} barang stok menipis:</strong> ` +
+        kritis.map(d => `${d.nama} (sisa ${d.stok} ${d.satuan})`).join(', ') + '. Segera lakukan restock!';
+    } else {
+      document.getElementById('alertBar').style.display = 'none';
+    }
+  }
+
+  function hari() {
+    return new Date().toLocaleDateString('id-ID', {day:'2-digit',month:'short',year:'numeric'});
+  }
+
+  function formatRp(n) { return 'Rp ' + Number(n).toLocaleString('id-ID'); }
+
+  // ── RENDER TABEL STOK ──
+  function renderTabelStok() {
+    const cari = document.getElementById('searchStok').value.toLowerCase();
+    const kat  = document.getElementById('filterKategori').value;
+    const sts  = document.getElementById('filterStatus').value;
+
+    let data = dataStok.filter(d => {
+      const cocok = d.nama.toLowerCase().includes(cari) || d.kode.toLowerCase().includes(cari);
+      const cocokKat = !kat || d.kategori === kat;
+      const cocokSts = !sts || (sts==='aman' ? d.stok >= d.minStok : d.stok < d.minStok);
+      return cocok && cocokKat && cocokSts;
+    });
+
+    const tbody = document.getElementById('bodyStok');
+    if (!data.length) {
+      tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state"><div class="icon">🔍</div><h3>Tidak Ditemukan</h3><p>Coba ubah filter pencarian</p></div></td></tr>`;
+      return;
+    }
+
+    const katClass = { Kemasan:'kemasan', Peralatan:'peralatan', Keamanan:'keamanan', Administrasi:'administrasi' };
+    tbody.innerHTML = data.map(d => {
+      const stokClass = d.stok >= d.minStok ? 'stok-normal' : (d.stok > 0 ? 'stok-warning' : 'stok-danger');
+      return `<tr>
+        <td><span class="kode-cell">${d.kode}</span></td>
+        <td><span class="nama-cell">${d.nama}</span><br><small style="color:var(--muted);font-size:11px">${d.keterangan}</small></td>
+        <td><span class="pill pill-${katClass[d.kategori]||'kemasan'}">${d.kategori}</span></td>
+        <td><span class="stok-cell ${stokClass}">${d.stok}</span></td>
+        <td style="color:var(--muted)">${d.minStok}</td>
+        <td style="color:var(--muted)">${d.satuan}</td>
+        <td>${formatRp(d.harga)}</td>
+        <td>
+          <div class="action-group">
+            <button class="btn btn-blue btn-sm" onclick="bukaModalMutasiBarang(${d.id},'Masuk')">⬆</button>
+            <button class="btn btn-danger btn-sm" onclick="bukaModalMutasiBarang(${d.id},'Keluar')">⬇</button>
+            <button class="btn btn-ghost btn-sm" onclick="bukaModalEdit(${d.id})">✏</button>
+            <button class="btn btn-danger btn-sm" onclick="hapusBarang(${d.id})">🗑</button>
+          </div>
+        </td>
+      </tr>`;
+    }).join('');
+  }
+
+  // ── RENDER TABEL MUTASI ──
+  function renderTabelMutasi() {
+    const cari  = document.getElementById('searchMutasi').value.toLowerCase();
+    const jenis = document.getElementById('filterJenis').value;
+
+    let data = [...riwayatStok].reverse().filter(r => {
+      const cocok = r.nama.toLowerCase().includes(cari) || r.kode.toLowerCase().includes(cari);
+      const cocokJ = !jenis || r.jenis === jenis;
+      return cocok && cocokJ;
+    });
+
+    const tbody = document.getElementById('bodyMutasi');
+    if (!data.length) {
+      tbody.innerHTML = `<tr><td colspan="9"><div class="empty-state"><div class="icon">📋</div><h3>Belum Ada Mutasi</h3><p>Belum ada riwayat pergerakan stok</p></div></td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = data.map(r => `<tr>
+      <td style="color:var(--muted);white-space:nowrap">${r.tanggal}</td>
+      <td><span class="kode-cell">${r.kode}</span></td>
+      <td>${r.nama}</td>
+      <td><span class="pill pill-${r.jenis==='Masuk'?'masuk':'keluar'}">${r.jenis==='Masuk'?'⬆ Masuk':'⬇ Keluar'}</span></td>
+      <td><strong style="color:${r.jenis==='Masuk'?'var(--green)':'var(--red)'}">${r.jenis==='Masuk'?'+':'−'}${r.jumlah}</strong></td>
+      <td style="color:var(--muted)">${r.stokSebelum}</td>
+      <td>${r.stokSesudah}</td>
+      <td style="color:var(--muted);font-size:12px">${r.keterangan}</td>
+      <td style="color:var(--muted);font-size:12px">${r.oleh}</td>
+    </tr>`).join('');
+  }
+
+  // ── MODAL HELPERS ──
+  function bukaModal(id) { document.getElementById(id).classList.add('show'); }
+  function tutupModal(id) { document.getElementById(id).classList.remove('show'); }
+
+  // ── MODAL TAMBAH ──
+  function bukaModalTambah() {
+    document.getElementById('modalTambahTitle').textContent = 'Tambah Barang Baru';
+    document.getElementById('editId').value = '';
+    ['Kode','Nama','Satuan','Stok','MinStok','Harga','Keterangan'].forEach(f => {
+      const el = document.getElementById('input'+f);
+      if (el) el.value = '';
+    });
+    document.getElementById('inputKategori').value = 'Kemasan';
+    bukaModal('modalTambah');
+  }
+
+  function bukaModalEdit(id) {
+    const d = dataStok.find(x => x.id === id);
+    if (!d) return;
+    document.getElementById('modalTambahTitle').textContent = 'Edit Barang';
+    document.getElementById('editId').value = id;
+    document.getElementById('inputKode').value = d.kode;
+    document.getElementById('inputNama').value = d.nama;
+    document.getElementById('inputKategori').value = d.kategori;
+    document.getElementById('inputSatuan').value = d.satuan;
+    document.getElementById('inputStok').value = d.stok;
+    document.getElementById('inputMinStok').value = d.minStok;
+    document.getElementById('inputHarga').value = d.harga;
+    document.getElementById('inputKeterangan').value = d.keterangan;
+    bukaModal('modalTambah');
+  }
+
+  function simpanBarang() {
+    const kode = document.getElementById('inputKode').value.trim();
+    const nama = document.getElementById('inputNama').value.trim();
+    if (!kode || !nama) {
+      Swal.fire({title:'Lengkapi Data',text:'Kode dan nama barang wajib diisi.',icon:'warning',confirmButtonColor:'#f97316',background:'#1e293b',color:'#f1f5f9'});
+      return;
+    }
+    const editId = document.getElementById('editId').value;
+    const obj = {
+      kode, nama,
+      kategori:   document.getElementById('inputKategori').value,
+      satuan:     document.getElementById('inputSatuan').value || 'pcs',
+      stok:       parseInt(document.getElementById('inputStok').value) || 0,
+      minStok:    parseInt(document.getElementById('inputMinStok').value) || 0,
+      harga:      parseInt(document.getElementById('inputHarga').value) || 0,
+      keterangan: document.getElementById('inputKeterangan').value
+    };
+
+    if (editId) {
+      const idx = dataStok.findIndex(x => x.id == editId);
+      if (idx > -1) { dataStok[idx] = { ...dataStok[idx], ...obj }; }
+    } else {
+      obj.id = Date.now();
+      dataStok.push(obj);
+    }
+
+    tutupModal('modalTambah');
+    renderTabelStok(); updateStats();
+    Swal.fire({title:'Berhasil!',text: editId ? 'Data barang diperbarui.' : 'Barang baru ditambahkan.',
+      icon:'success',confirmButtonColor:'#f97316',background:'#1e293b',color:'#f1f5f9',timer:1500,showConfirmButton:false});
+  }
+
+  function hapusBarang(id) {
+    const d = dataStok.find(x => x.id === id);
+    Swal.fire({
+      title:'Hapus Barang?', text:`"${d.nama}" akan dihapus dari daftar stok.`,
+      icon:'warning', showCancelButton:true,
+      confirmButtonColor:'#ef4444', cancelButtonColor:'#1e3a8a',
+      confirmButtonText:'Hapus', cancelButtonText:'Batal',
+      background:'#1e293b', color:'#f1f5f9'
+    }).then(r => {
+      if (r.isConfirmed) {
+        dataStok = dataStok.filter(x => x.id !== id);
+        renderTabelStok(); updateStats();
+        Swal.fire({title:'Dihapus!',icon:'success',confirmButtonColor:'#f97316',background:'#1e293b',color:'#f1f5f9',timer:1200,showConfirmButton:false});
+      }
+    });
+  }
+
+  // ── MODAL MUTASI ──
+  function isiSelectMutasi() {
+    const sel = document.getElementById('mutasiBarang');
+    sel.innerHTML = '<option value="">-- Pilih Barang --</option>';
+    dataStok.forEach(d => {
+      sel.innerHTML += `<option value="${d.id}">${d.kode} - ${d.nama} (stok: ${d.stok})</option>`;
+    });
+  }
+
+  function bukaModalMutasi(jenis) {
+    document.getElementById('jenisMutasi').value = jenis;
+    document.getElementById('modalMutasiTitle').textContent = jenis === 'Masuk' ? '⬆ Stok Masuk' : '⬇ Stok Keluar';
+    document.getElementById('btnSimpanMutasi').className = jenis === 'Masuk' ? 'btn btn-success' : 'btn btn-danger';
+    document.getElementById('mutasiBarang').value = '';
+    document.getElementById('mutasiJumlah').value = '';
+    document.getElementById('mutasiKeterangan').value = '';
+    document.getElementById('infoMutasi').style.display = 'none';
+    isiSelectMutasi();
+    bukaModal('modalMutasi');
+  }
+
+  function bukaModalMutasiBarang(id, jenis) {
+    bukaModalMutasi(jenis);
+    setTimeout(() => {
+      document.getElementById('mutasiBarang').value = id;
+      updateInfoMutasi();
+    }, 50);
+  }
+
+  function updateInfoMutasi() {
+    const id = document.getElementById('mutasiBarang').value;
+    const info = document.getElementById('infoMutasi');
+    if (!id) { info.style.display='none'; return; }
+    const d = dataStok.find(x => x.id == id);
+    if (!d) return;
+    info.style.display = 'block';
+    document.getElementById('infoStokSaat').textContent = d.stok + ' ' + d.satuan;
+    document.getElementById('infoMinStok').textContent  = d.minStok + ' ' + d.satuan;
+  }
+
+  function simpanMutasi() {
+    const id     = document.getElementById('mutasiBarang').value;
+    const jenis  = document.getElementById('jenisMutasi').value;
+    const jumlah = parseInt(document.getElementById('mutasiJumlah').value);
+    const ket    = document.getElementById('mutasiKeterangan').value.trim() || '-';
+
+    if (!id || !jumlah || jumlah < 1) {
+      Swal.fire({title:'Lengkapi Data',text:'Pilih barang dan masukkan jumlah yang valid.',icon:'warning',confirmButtonColor:'#f97316',background:'#1e293b',color:'#f1f5f9'});
+      return;
+    }
+
+    const idx = dataStok.findIndex(x => x.id == id);
+    const d   = dataStok[idx];
+
+    if (jenis === 'Keluar' && jumlah > d.stok) {
+      Swal.fire({title:'Stok Tidak Cukup',text:`Stok tersedia hanya ${d.stok} ${d.satuan}.`,icon:'error',confirmButtonColor:'#f97316',background:'#1e293b',color:'#f1f5f9'});
+      return;
+    }
+
+    const sebelum = d.stok;
+    const sesudah = jenis === 'Masuk' ? sebelum + jumlah : sebelum - jumlah;
+    dataStok[idx].stok = sesudah;
+
+    riwayatStok.push({
+      id: Date.now(), tanggal: hari(),
+      kode: d.kode, nama: d.nama,
+      jenis, jumlah, stokSebelum: sebelum, stokSesudah: sesudah,
+      keterangan: ket, oleh: namaUser
+    });
+
+    tutupModal('modalMutasi');
+    renderTabelStok(); updateStats();
+    Swal.fire({
+      title: jenis==='Masuk' ? 'Stok Bertambah!' : 'Stok Berkurang!',
+      text: `${d.nama}: ${sebelum} → ${sesudah} ${d.satuan}`,
+      icon:'success', confirmButtonColor:'#f97316', background:'#1e293b', color:'#f1f5f9',
+      timer:2000, showConfirmButton:false
+    });
+  }
+
+  // Tutup modal klik luar
+  document.querySelectorAll('.modal-overlay').forEach(o => {
+    o.addEventListener('click', e => { if(e.target===o) o.classList.remove('show'); });
+  });
+
+  // ── INIT ──
+  updateStats();
+  renderTabelStok();
+</script>
+</body>
+</html>
